@@ -1,0 +1,11 @@
+// Decipher text over command line instead of via a .txt file
+crypto = include_lib("/lib/crypto.so")
+if not crypto then
+	exit("[ERROR] crypto.so not installed.")
+end if
+args = params[0].split(":")
+if not args then
+	exit("[ERROR] No arguments provided")
+end if
+res = crypto.decipher(args[1])
+print(args[0]+":"+res)
