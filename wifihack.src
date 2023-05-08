@@ -1,0 +1,74 @@
+// First GreyScript script - Auto Wi-Fi hacking
+// https://steamcommunity.com/sharedfiles/filedetails/?id=2382971195
+crypto = include_lib("/lib/crypto.so")
+
+// AIRMON
+
+// List all monitoring devices
+get_shell.launch("/bin/airmon")
+// Ask for device 
+device = user_input("\n[+] Choose Interface: ")
+// Check that a device is entered
+if not device[0:4] == "wlan" then 
+	exit("[-] No Device Name") 
+end if
+print("\n[ ] New State...\n")
+// Start aimon
+crypto.airmon("start", device)
+// Show monitoring
+get_shell.launch("/bin/airmon")
+
+// IWLIST
+print("\n[+] Choose BSSID & ESSID\n")
+// List networks
+get_shell.launch("/bin/iwlist", device)
+// Ask for BSSID and ESSID
+b = user_input("\n[+] BSSID: ") 
+e = user_input("[+] ESSID: ")
+// Ask for ACK count to aim for and convert to int
+acks = user_input("[+] ACKs (>7000): ").to_int
+
+// Set acks to 7000 if less entered
+print(acks)
+if acks < 7000 or acks == "" then
+	print("[-] Acks below 7000, reset to 7000")
+	acks = 7000
+end if
+
+//AIREPLAY
+print("\n[+] Running aireplay...\n")
+// Run aireplay
+crypto.aireplay(b, e, acks)
+print("\n[+] Got required amount of acks\n[ ] Waiting for file.cap to be written...")
+// Wait for file to be written
+wait(5)
+
+// AIRCRACK
+print("\n[ ] Cracking...\n")
+capFile = current_path + "/file.cap"
+pass = crypto.aircrack(capFile)
+print("[+] Password Found: " + pass)
+
+// Cleanup
+print("\n[ ] Stopping device monitoring...\n")
+// Stop monitoring
+crypto.airmon("stop", device)
+// Show airmon state
+get_shell.launch("/bin/airmon")
+
+confirm = user_input("\n[+] Delete file.cap (Y/N): ")
+if confirm == "Y" or confirm == "y" or confirm == "Yes" or confirm == "yes" then
+	capfile = get_shell.host_computer.File(current_path + "/file.cap")
+	capfile.delete
+	print("[+] Capfile deleted")
+end if
+
+confirm = user_input("\n[+] Connect to WiFi network (Y/N): ")
+if confirm == "Y" or confirm == "y" or confirm == "Yes" or confirm == "yes" then
+	successful = connect_wifi(device, b, e, pass)
+	if successful then
+		print("[+] WiFi connected successfully")
+	else 
+		print("[-] WiFi connection failed")
+	end if
+end if
